@@ -6,5 +6,5 @@ trait InternedStrings {
 }
 
 object InternedStrings {
-  val NullId = 0
+  val NullId: Int = -1
 }

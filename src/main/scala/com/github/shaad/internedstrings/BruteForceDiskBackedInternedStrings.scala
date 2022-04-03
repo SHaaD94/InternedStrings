@@ -2,12 +2,11 @@ package com.github.shaad.internedstrings
 
 import com.github.shaad.internedstrings.InternedStrings.NullId
 
-import java.io.{File, RandomAccessFile}
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption.{CREATE_NEW, READ, WRITE}
 import java.nio.file.{Files, Path}
 import scala.annotation.tailrec
-import scala.collection.concurrent.TrieMap
 import scala.util.Using
 
 object BruteForceDiskBackedInternedStrings {
@@ -17,11 +16,9 @@ object BruteForceDiskBackedInternedStrings {
 
       var currentOffset = 0
       strings.zipWithIndex.foreach { case (string, index) =>
-        if (string != null) {
-          stream.write(string)
-          offsets(index) = currentOffset
-          currentOffset += string.length
-        }
+        stream.write(string)
+        offsets(index) = currentOffset
+        currentOffset += string.length
       }
 
       stream.flush()
@@ -52,7 +49,7 @@ class BruteForceDiskBackedInternedStrings private (
             }
           }
 
-          val searchResult = search(1)
+          val searchResult = search(0)
           if (searchResult != NullId) {
             id2String.put(searchResult, word)
           }

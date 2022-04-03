@@ -16,26 +16,22 @@ object DiskHashBackedInternedStrings {
   def apply(strings: Array[Array[Byte]], filePath: Path): DiskHashBackedInternedStrings = {
     Using.resource(Files.newOutputStream(filePath, CREATE_NEW, WRITE)) { stream =>
       val offsets = new Array[Int](strings.length)
-      val hash2Offsets = HashIntObjMaps
-        .getDefaultFactory[HashIntSet]
-        .newUpdatableMap[HashIntSet]()
+      val hash2Offsets = HashIntObjMaps.newUpdatableMap[HashIntSet]()
 
       var currentOffset = 0
       strings.zipWithIndex.foreach { case (string, index) =>
-        if (string != null) {
-          stream.write(string)
-          offsets(index) = currentOffset
-          currentOffset += string.length
-          val stringHash = util.Arrays.hashCode(string)
-          hash2Offsets
-            .computeIfAbsent(
-              stringHash,
-              new IntFunction[HashIntSet] {
-                override def apply(value: Int): HashIntSet = HashIntSets.newUpdatableSet()
-              }
-            )
-            .add(index)
-        }
+        stream.write(string)
+        offsets(index) = currentOffset
+        currentOffset += string.length
+        val stringHash = util.Arrays.hashCode(string)
+        hash2Offsets
+          .computeIfAbsent(
+            stringHash,
+            new IntFunction[HashIntSet] {
+              override def apply(value: Int): HashIntSet = HashIntSets.newUpdatableSet()
+            }
+          )
+          .add(index)
       }
 
       stream.flush()

@@ -20,21 +20,18 @@ object DiskBinarySearchBackedInternedStrings {
       val offsets = new Array[Int](strings.length)
       val sortedMappings = new Array[Int](strings.length)
 
-      var currentOffset = 0
       strings.zipWithIndex
-        .drop(1)
         .sorted(ArrayOrdering)
         .zipWithIndex
         .foreach { case ((_, originalIndex), sortedIndex) =>
-          sortedMappings(sortedIndex + 1) = originalIndex
+          sortedMappings(sortedIndex) = originalIndex
         }
 
+      var currentOffset = 0
       strings.zipWithIndex.foreach { case (string, originalIndex) =>
-        if (string != null) {
-          stream.write(string)
-          offsets(originalIndex) = currentOffset
-          currentOffset += string.length
-        }
+        stream.write(string)
+        offsets(originalIndex) = currentOffset
+        currentOffset += string.length
       }
 
       stream.flush()
