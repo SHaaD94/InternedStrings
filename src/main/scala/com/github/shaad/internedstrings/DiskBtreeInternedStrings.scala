@@ -6,14 +6,15 @@ import com.koloboke.collect.set.hash.{HashIntSet, HashIntSets}
 
 import java.io.{File, RandomAccessFile}
 import java.nio.charset.StandardCharsets
-import java.nio.file.StandardOpenOption.{CREATE_NEW, WRITE}
 import java.nio.file.{Files, Path}
+import java.nio.file.StandardOpenOption.{CREATE_NEW, WRITE}
 import java.util
 import java.util.function.IntFunction
 import scala.util.Using
 
-object DiskHashBackedInternedStrings {
-  def apply(strings: Array[Array[Byte]], filePath: Path): DiskHashBackedInternedStrings = {
+
+object DiskBtreeInternedStrings {
+  def apply(strings: Array[Array[Byte]], filePath: Path): DiskBtreeInternedStrings = {
     Using.resource(Files.newOutputStream(filePath, CREATE_NEW, WRITE)) { stream =>
       val offsets = new Array[Int](strings.length)
       val hash2Offset = HashIntIntMaps.newUpdatableMap()
@@ -42,12 +43,12 @@ object DiskHashBackedInternedStrings {
       }
 
       stream.flush()
-      new DiskHashBackedInternedStrings(filePath.toFile, offsets, hash2Offset, hash2MultipleOffsets, currentOffset)
+      new DiskBtreeInternedStrings(filePath.toFile, offsets, hash2Offset, hash2MultipleOffsets, currentOffset)
     }
   }
 }
 
-class DiskHashBackedInternedStrings private (
+class DiskBtreeInternedStrings private(
     private val file: File,
     private val offsets: Array[Int],
     private val hash2Offset: HashIntIntMap,
