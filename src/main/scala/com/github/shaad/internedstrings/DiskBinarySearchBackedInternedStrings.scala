@@ -18,14 +18,7 @@ object DiskBinarySearchBackedInternedStrings {
   def apply(strings: Array[Array[Byte]], filePath: Path): DiskBinarySearchBackedInternedStrings = {
     Using.resource(Files.newOutputStream(filePath, CREATE_NEW, WRITE)) { stream =>
       val offsets = new Array[Int](strings.length)
-      val sortedMappings = new Array[Int](strings.length)
-
-      strings.zipWithIndex
-        .sorted(ArrayOrdering)
-        .zipWithIndex
-        .foreach { case ((_, originalIndex), sortedIndex) =>
-          sortedMappings(sortedIndex) = originalIndex
-        }
+      val sortedMappings = strings.zipWithIndex.sorted(ArrayOrdering).map(_._2)
 
       var currentOffset = 0
       strings.zipWithIndex.foreach { case (string, originalIndex) =>

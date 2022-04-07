@@ -45,5 +45,4 @@ abstract class BaseDiskInternedStrings(
     } else {
       offsets(id + 1) - offsets(id)
     }
-
 }

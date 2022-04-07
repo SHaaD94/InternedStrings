@@ -2,6 +2,7 @@ package com.github.shaad.internedstrings
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
+import java.util.UUID
 import scala.util.Random
 
 object main extends App {
@@ -11,6 +12,7 @@ object main extends App {
 
   val a = (0 to 300).map { i =>
     println(i)
+    DiskBtreeInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString), 10)
 //    DiskHashBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
 //    DiskBinarySearchBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
 //    BruteForceDiskBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))

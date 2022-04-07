@@ -96,3 +96,8 @@ class BruteForceDiskBackedInternedStringsSpec extends InternedStringsSpec {
   override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
     BruteForceDiskBackedInternedStrings.apply(strings, filePath)
 }
+
+class BTreeIndexDiskSpec extends InternedStringsSpec {
+  override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
+    DiskBtreeInternedStrings.apply(strings, filePath, 4)
+}
