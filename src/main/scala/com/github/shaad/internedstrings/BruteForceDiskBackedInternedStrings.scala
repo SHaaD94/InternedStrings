@@ -2,7 +2,7 @@ package com.github.shaad.internedstrings
 
 import com.github.shaad.internedstrings.InternedStrings.NullId
 
-import java.io.File
+import java.io.{BufferedOutputStream, DataOutputStream, File}
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption.{CREATE_NEW, READ, WRITE}
 import java.nio.file.{Files, Path}
@@ -11,18 +11,19 @@ import scala.util.Using
 
 object BruteForceDiskBackedInternedStrings {
   def apply(strings: Array[Array[Byte]], filePath: Path): BruteForceDiskBackedInternedStrings = {
-    Using.resource(Files.newOutputStream(filePath, CREATE_NEW, WRITE)) { stream =>
-      val offsets = new Array[Int](strings.length)
+    Using.resource(new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(filePath, CREATE_NEW, WRITE)))) {
+      stream =>
+        val offsets = new Array[Int](strings.length)
 
-      var currentOffset = 0
-      strings.zipWithIndex.foreach { case (string, index) =>
-        stream.write(string)
-        offsets(index) = currentOffset
-        currentOffset += string.length
-      }
+        var currentOffset = 0
+        strings.zipWithIndex.foreach { case (string, index) =>
+          stream.write(string)
+          offsets(index) = currentOffset
+          currentOffset += string.length
+        }
 
-      stream.flush()
-      new BruteForceDiskBackedInternedStrings(filePath.toFile, offsets, currentOffset)
+        stream.flush()
+        new BruteForceDiskBackedInternedStrings(filePath.toFile, offsets, currentOffset)
     }
   }
 }
