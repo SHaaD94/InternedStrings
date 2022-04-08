@@ -46,11 +46,7 @@ class DiskBinarySearchBackedInternedStrings(
     private val totalSize: Int
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {
   override def lookup(word: String): Int = {
-//    string2Id.getOrElseUpdate(
-//      word, {
     binsearch(0, offsets.length - 1, word.getBytes(StandardCharsets.UTF_8), raf)
-//        }
-//    )
   }
 
   @tailrec

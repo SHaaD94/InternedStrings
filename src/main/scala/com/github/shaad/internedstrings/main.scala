@@ -7,19 +7,18 @@ import scala.util.Random
 
 object main extends App {
   val rand = new Random
-  val dataset = (0 to 100_000).map(_ => rand.nextString(20).getBytes(StandardCharsets.UTF_8)).toArray
+  val dataset = (0 to 100_000).map(_ => rand.nextString(20).getBytes(StandardCharsets.UTF_8)).toArray.map(new String(_))
   val tempdir = Files.createTempDirectory("bench").toFile
 
   val a = (0 to 300).map { i =>
     println(i)
-    val b = DiskBtreeInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+//    val b = DiskBtreeInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
 
 //    val b =
 //      DiskBinarySearchBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
-    //    BruteForceDiskBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
-    //    DiskHashBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+  //    BruteForceDiskBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+  //    DiskHashBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
 //    dataset.foreach(x => b.lookup(new String(x)))
-    b
   }
 
   Thread.sleep(1000000000)

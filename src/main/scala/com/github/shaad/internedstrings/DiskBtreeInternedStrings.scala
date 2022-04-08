@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption.{CREATE_NEW, WRITE}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicInteger
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.math.{cbrt, ceil, max}
 import scala.util.Using
@@ -19,6 +20,7 @@ object DiskBtreeInternedStrings {
   def apply(strings: Array[Array[Byte]], filePath: Path): DiskBtreeInternedStrings = {
     // we want to not have more than 3 seeks for searching of each string
     // so we here we are solving equation log x (strings.length) = 3 | strings.length = x^3
+    // but for the small arrays we don't want to make it too small, so we put hard minimum cap of 2
     val m = max(ceil(cbrt(strings.length)), 2)
 
     Using.resource(new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(filePath, CREATE_NEW, WRITE)))) {
@@ -106,8 +108,6 @@ class DiskBtreeInternedStrings private (
   override protected def getSize(id: Int): Int = lengths(id)
 
   override def lookup(word: String): Int = {
-//    string2Id.getOrElseUpdate(
-//      word, {
     val wordBytes = word.getBytes(StandardCharsets.UTF_8)
 
     var currentNodeInfo = rootNode
@@ -145,8 +145,6 @@ class DiskBtreeInternedStrings private (
     }
 
     NullId
-//        }
-//    )
   }
 
   private def readNodeInfo(raf: RandomAccessFile, nodeId: Int): NodeBytesWrapper = {

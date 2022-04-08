@@ -57,15 +57,12 @@ class DiskHashBackedInternedStrings private (
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {
 
   override def lookup(word: String): Int = {
-//    string2Id.getOrElseUpdate(
-//      word, {
     val wordBytes = word.getBytes(StandardCharsets.UTF_8)
     val wordHashCode = util.Arrays.hashCode(wordBytes)
     val onlyIndex = hash2Offset.getOrDefault(wordHashCode, NullId)
     if (onlyIndex != NullId) {
       val bytes = readBytesByIndex(raf, onlyIndex)
       if (util.Arrays.compare(wordBytes, bytes) == 0) {
-//            id2String.put(onlyIndex, new String(bytes, StandardCharsets.UTF_8))
         onlyIndex
       } else {
         NullId
@@ -81,14 +78,11 @@ class DiskHashBackedInternedStrings private (
           val index = cellsCursor.elem()
           val bytes = readBytesByIndex(raf, index)
           if (util.Arrays.compare(wordBytes, bytes) == 0) {
-//                id2String.put(index, new String(bytes, StandardCharsets.UTF_8))
             requiredIndex = index
           }
         }
         requiredIndex
       }
     }
-//      }
-//    )
   }
 }
