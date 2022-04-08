@@ -9,14 +9,17 @@ import java.nio.file.StandardOpenOption.{CREATE_NEW, WRITE}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
+import scala.math.{cbrt, ceil, max}
 import scala.util.Using
 
 case class Entry(stringIndex: Int, childNode: Option[Node])
 case class Node(id: Int, entries: Array[Entry])
 
 object DiskBtreeInternedStrings {
-  def apply(strings: Array[Array[Byte]], filePath: Path, m: Int): DiskBtreeInternedStrings = {
-    require(m > 1, "Invalid branching factor")
+  def apply(strings: Array[Array[Byte]], filePath: Path): DiskBtreeInternedStrings = {
+    // we want to not have more than 3 seeks for searching of each string
+    // so we here we are solving equation log x (strings.length) = 3 | strings.length = x^3
+    val m = max(ceil(cbrt(strings.length)), 2)
 
     Using.resource(new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(filePath, CREATE_NEW, WRITE)))) {
       stream =>
@@ -84,6 +87,7 @@ object DiskBtreeInternedStrings {
 
 case class NodeBytesWrapper(buffer: ByteBuffer) {
   lazy val numberOfEntries: Int = buffer.getInt(0)
+  lazy val stringsSectionStart: Int = 4 + numberOfEntries * 8
   def stringIndex(entryId: Int): Int = buffer.getInt(4 + entryId * 8)
   def childNode(entryId: Int): Int = buffer.getInt(4 + entryId * 8 + 4)
 }
@@ -97,47 +101,52 @@ class DiskBtreeInternedStrings private (
     private val nodeLengths: Array[Int]
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {
 
+  private val rootNode = readNodeInfo(raf, 0)
+
   override protected def getSize(id: Int): Int = lengths(id)
 
   override def lookup(word: String): Int = {
-    Using.resource(new RandomAccessFile(file, "r")) { raf =>
-      val wordBytes = word.getBytes(StandardCharsets.UTF_8)
+//    string2Id.getOrElseUpdate(
+//      word, {
+    val wordBytes = word.getBytes(StandardCharsets.UTF_8)
 
-      var currentNodeInfo = readNodeInfo(raf, 0) // read root node
-      while (currentNodeInfo != null) {
-        var found = false
-        var currentEntry = 0
-        var bytesChecked = 4 + currentNodeInfo.numberOfEntries * 8
-        while (!found && currentEntry < currentNodeInfo.numberOfEntries) {
-          val stringIndex = currentNodeInfo.stringIndex(currentEntry)
-          val bytesComparison = java.util.Arrays.compare(
-            wordBytes,
-            0,
-            word.length,
-            currentNodeInfo.buffer.array(),
-            bytesChecked,
-            bytesChecked + lengths(stringIndex)
-          )
-          if (bytesComparison < 0) {
-            if (currentNodeInfo.childNode(currentEntry) != -1) {
-              raf.seek(nodeOffsets(currentNodeInfo.childNode(currentEntry)))
-              currentNodeInfo = readNodeInfo(raf, currentNodeInfo.childNode(currentEntry))
-            } else {
-              currentNodeInfo = null
-            }
-            found = true
-          } else if (bytesComparison > 0 && currentNodeInfo.numberOfEntries == currentEntry + 1) {
-            return NullId
-          } else if (bytesComparison == 0) {
-            return stringIndex
+    var currentNodeInfo = rootNode
+    while (currentNodeInfo != null) {
+      var found = false
+      var currentEntry = 0
+      var bytesChecked = currentNodeInfo.stringsSectionStart
+      while (!found && currentEntry < currentNodeInfo.numberOfEntries) {
+        val stringIndex = currentNodeInfo.stringIndex(currentEntry)
+        val bytesComparison = java.util.Arrays.compare(
+          wordBytes,
+          0,
+          word.length,
+          currentNodeInfo.buffer.array(),
+          bytesChecked,
+          bytesChecked + lengths(stringIndex)
+        )
+        if (bytesComparison < 0) {
+          if (currentNodeInfo.childNode(currentEntry) != -1) {
+            raf.seek(nodeOffsets(currentNodeInfo.childNode(currentEntry)))
+            currentNodeInfo = readNodeInfo(raf, currentNodeInfo.childNode(currentEntry))
+          } else {
+            currentNodeInfo = null
           }
-
-          bytesChecked += lengths(stringIndex)
-          currentEntry += 1
+          found = true
+        } else if (bytesComparison > 0 && currentNodeInfo.numberOfEntries == currentEntry + 1) {
+          return NullId
+        } else if (bytesComparison == 0) {
+          return stringIndex
         }
+
+        bytesChecked += lengths(stringIndex)
+        currentEntry += 1
       }
-      return NullId
     }
+
+    NullId
+//        }
+//    )
   }
 
   private def readNodeInfo(raf: RandomAccessFile, nodeId: Int): NodeBytesWrapper = {

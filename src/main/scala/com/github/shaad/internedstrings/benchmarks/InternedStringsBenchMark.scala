@@ -3,6 +3,7 @@ package com.github.shaad.internedstrings.benchmarks
 import com.github.shaad.internedstrings.{
   BruteForceDiskBackedInternedStrings,
   DiskBinarySearchBackedInternedStrings,
+  DiskBtreeInternedStrings,
   DiskHashBackedInternedStrings,
   InternedStrings
 }
@@ -16,15 +17,15 @@ import scala.util.Random
 
 @State(Scope.Benchmark)
 class InternedStringsBenchMark {
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
+//  def bruteForceDisk(state: BruteForceState): Unit = {
+//    state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
+//  }
+//
   @Benchmark
   @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
-  def bruteForceDisk(state: BruteForceState): Unit = {
-    state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
-  }
-
-  @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
-  def diskHash(state: BinSearchState): Unit = {
+  def diskHash(state: HashState): Unit = {
     state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
   }
 
@@ -33,11 +34,17 @@ class InternedStringsBenchMark {
   def diskBinarySearch(state: BinSearchState): Unit = {
     state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
   }
+
+  @Benchmark
+  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
+  def diskBtree(state: BtreeState): Unit = {
+    state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
+  }
 }
 
 @State(Scope.Benchmark)
 abstract class BaseState() {
-  var stringsCount: Int = 10_000
+  var stringsCount: Int = 100_000
 
   val dataset: Array[Array[Byte]] = genDataset(stringsCount)
   var data: InternedStrings = null
@@ -74,4 +81,8 @@ class HashState extends BaseState {
 
 class BinSearchState extends BaseState {
   override def createStrings(file: Path): InternedStrings = DiskBinarySearchBackedInternedStrings.apply(dataset, file)
+}
+
+class BtreeState extends BaseState {
+  override def createStrings(file: Path): InternedStrings = DiskBtreeInternedStrings.apply(dataset, file)
 }

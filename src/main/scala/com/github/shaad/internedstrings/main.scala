@@ -12,15 +12,19 @@ object main extends App {
 
   val a = (0 to 300).map { i =>
     println(i)
-    DiskBtreeInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString), 10)
-//    DiskHashBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
-//    DiskBinarySearchBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
-//    BruteForceDiskBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+    val b = DiskBtreeInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+
+//    val b =
+//      DiskBinarySearchBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+    //    BruteForceDiskBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+    //    DiskHashBackedInternedStrings.apply(dataset, Paths.get(tempdir.toString, UUID.randomUUID().toString))
+//    dataset.foreach(x => b.lookup(new String(x)))
+    b
   }
 
   Thread.sleep(1000000000)
 }
-//5,014,179,384 B - Hash
-//  257,846,296 B - BinSearch
-//  137,445,448 B - Bruteforce
-//   16,800 000
+// 1.3 GB HASH
+// 271 MB BTree
+// 245 MB Binary
+// 128 MB Bruteforce

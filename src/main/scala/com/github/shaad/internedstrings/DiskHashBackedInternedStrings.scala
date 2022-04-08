@@ -17,7 +17,7 @@ object DiskHashBackedInternedStrings {
     Using.resource(new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(filePath, CREATE_NEW, WRITE)))) {
       stream =>
         val offsets = new Array[Int](strings.length)
-        val hash2Offset = HashIntIntMaps.newUpdatableMap()
+        val hash2Offset = HashIntIntMaps.newMutableMap()
         val hash2MultipleOffsets = HashIntObjMaps.newMutableMap[HashIntSet]()
 
         var currentOffset = 0
@@ -57,33 +57,38 @@ class DiskHashBackedInternedStrings private (
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {
 
   override def lookup(word: String): Int = {
-    string2Id.getOrElseUpdate(
-      word, {
-        val wordBytes = word.getBytes(StandardCharsets.UTF_8)
-        val wordHashCode = util.Arrays.hashCode(wordBytes)
-//        val onlyIndex = hash2Offset.getOrDefault(wordHashCode, NullId)
-//        if (onlyIndex!= NullId) {
-//
-//        }
-        val potentialCells = hash2MultipleOffsets.get(wordHashCode)
-        if (potentialCells == null) {
-          NullId
-        } else {
-          Using.resource(new RandomAccessFile(file, "r")) { raf =>
-            val cellsCursor = potentialCells.cursor()
-            var requiredIndex: Int = NullId
-            while (requiredIndex == NullId && cellsCursor.moveNext()) {
-              val index = cellsCursor.elem()
-              val bytes = readBytesByIndex(raf, index)
-              if (util.Arrays.compare(wordBytes, bytes) == 0) {
-                string2Id.put(new String(bytes, StandardCharsets.UTF_8), index)
-                requiredIndex = index
-              }
-            }
-            requiredIndex
+//    string2Id.getOrElseUpdate(
+//      word, {
+    val wordBytes = word.getBytes(StandardCharsets.UTF_8)
+    val wordHashCode = util.Arrays.hashCode(wordBytes)
+    val onlyIndex = hash2Offset.getOrDefault(wordHashCode, NullId)
+    if (onlyIndex != NullId) {
+      val bytes = readBytesByIndex(raf, onlyIndex)
+      if (util.Arrays.compare(wordBytes, bytes) == 0) {
+//            id2String.put(onlyIndex, new String(bytes, StandardCharsets.UTF_8))
+        onlyIndex
+      } else {
+        NullId
+      }
+    } else {
+      val potentialCells = hash2MultipleOffsets.get(wordHashCode)
+      if (potentialCells == null) {
+        NullId
+      } else {
+        val cellsCursor = potentialCells.cursor()
+        var requiredIndex: Int = NullId
+        while (requiredIndex == NullId && cellsCursor.moveNext()) {
+          val index = cellsCursor.elem()
+          val bytes = readBytesByIndex(raf, index)
+          if (util.Arrays.compare(wordBytes, bytes) == 0) {
+//                id2String.put(index, new String(bytes, StandardCharsets.UTF_8))
+            requiredIndex = index
           }
         }
+        requiredIndex
       }
-    )
+    }
+//      }
+//    )
   }
 }
