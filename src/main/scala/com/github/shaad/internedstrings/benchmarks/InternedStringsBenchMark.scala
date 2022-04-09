@@ -1,42 +1,36 @@
 package com.github.shaad.internedstrings.benchmarks
 
-import com.github.shaad.internedstrings.{
-  BruteForceDiskBackedInternedStrings,
-  DiskBinarySearchBackedInternedStrings,
-  DiskBtreeInternedStrings,
-  DiskHashBackedInternedStrings,
-  InternedStrings
-}
+import com.github.shaad.internedstrings._
 import org.openjdk.jmh.annotations._
 
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import scala.util.Random
 
 @State(Scope.Benchmark)
 class InternedStringsBenchMark {
   @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
-  @Timeout(time = 10, timeUnit = TimeUnit.SECONDS)
+  @BenchmarkMode(Array(Mode.Throughput))
   def bruteForceDisk(state: BruteForceState): Unit = standardBench(state)
 
   @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
+  @BenchmarkMode(Array(Mode.Throughput))
   def diskHash(state: HashState): Unit = standardBench(state)
 
   @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
+  @BenchmarkMode(Array(Mode.Throughput))
   def diskBinarySearch(state: BinSearchState): Unit = standardBench(state)
 
   @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
+  @BenchmarkMode(Array(Mode.Throughput))
   def diskBtree(state: BtreeState): Unit = standardBench(state)
 
   private def standardBench(state: BaseState): Unit = {
-    state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
+    val randomIndex = state.rand.nextInt(state.dataset.length)
+    val randomString = state.dataset(randomIndex)
+    state.data.lookup(new String(randomString, StandardCharsets.UTF_8))
   }
 }
 
@@ -48,6 +42,8 @@ abstract class BaseState() {
   lazy val dataset: Array[Array[Byte]] = genDataset()
   var data: InternedStrings = null
   protected var dir: File = null
+
+  val rand = new Random(0)
 
   @Setup(value = Level.Iteration)
   def init(): Unit = {
@@ -64,7 +60,6 @@ abstract class BaseState() {
   }
 
   private def genDataset(): Array[Array[Byte]] = {
-    val rand = new Random(0)
     require(stringsCount > 0)
     (0 to stringsCount).map(_ => rand.nextString(20).getBytes(StandardCharsets.UTF_8)).toArray
   }
