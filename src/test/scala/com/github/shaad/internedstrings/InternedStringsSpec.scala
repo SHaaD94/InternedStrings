@@ -4,13 +4,14 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
 
 abstract class InternedStringsSpec extends AnyWordSpec with BeforeAndAfterAll {
   private val strings: Array[Array[Byte]] =
     Array("a", "bbb", "cccccc", "qweqweqwerasd", "234243", "!3afas432", "", " ", "hgsdg asd").map(
-      _.getBytes()
+      _.getBytes(StandardCharsets.UTF_8)
     )
   private val directory = Files.createTempDirectory("temp-test-dir").toFile
 

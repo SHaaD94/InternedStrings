@@ -8,8 +8,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption.{CREATE_NEW, WRITE}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicInteger
-import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.math.{cbrt, ceil, max}
 import scala.util.Using
 
@@ -28,61 +26,65 @@ object DiskBtreeInternedStrings {
         val sortedIndexes = strings.zipWithIndex.sorted(ArrayOrdering).map(_._2)
         val nodeIdCounter = new AtomicInteger(0)
 
-        def createNode(l: Int, r: Int): Option[Node] = {
+        val nodeOffsets = new Array[Int](strings.length)
+        val nodeLength = new Array[Int](strings.length)
+
+        var curOffset = 0
+        val offsets = new Array[Int](strings.length)
+
+        def writeEntry(id: Int, entries: Array[(Int, Int)]): Int = {
+          nodeOffsets(id) = curOffset
+
+          stream.writeInt(entries.length)
+          entries.foreach { case (stringIndex, childNode) =>
+            stream.writeInt(stringIndex)
+            stream.writeInt(childNode)
+          }
+          curOffset += 4 + 8 * entries.length
+          entries.foreach { case (stringIndex, _) =>
+            stream.write(strings(stringIndex))
+            offsets(stringIndex) = curOffset
+            curOffset += strings(stringIndex).length
+          }
+          nodeLength(id) = curOffset - nodeOffsets(id)
+          id
+        }
+
+        def generateNode(l: Int, r: Int): Int = {
           if (l > r) {
-            None
+            -1
           } else if (l == r) {
-            Some(Node(nodeIdCounter.getAndIncrement(), Array(Entry(sortedIndexes(l), None))))
+            writeEntry(nodeIdCounter.getAndIncrement(), Array((sortedIndexes(l), -1)))
           } else {
             val numbersInEntry = (r - l) / m.doubleValue
             if (numbersInEntry < 1) {
-              Some(
-                Node(nodeIdCounter.getAndIncrement(), (l to r).map(index => Entry(sortedIndexes(index), None)).toArray)
-              )
+              writeEntry(nodeIdCounter.getAndIncrement(), (l to r).map(index => (sortedIndexes(index), -1)).toArray)
             } else {
               val entryRanges = (l to r).grouped(numbersInEntry.toInt + 1).toArray
 
               require(entryRanges.length <= m)
 
-              Some(
-                Node(
-                  nodeIdCounter.getAndIncrement(),
-                  entryRanges.map { r =>
-                    Entry(sortedIndexes(r.end), createNode(r.start, r.end - 1))
-                  }
-                )
+              writeEntry(
+                nodeIdCounter.getAndIncrement(),
+                entryRanges.map { r =>
+                  (sortedIndexes(r.end), generateNode(r.start, r.end - 1))
+                }
               )
             }
           }
         }
 
-        val rootNode = createNode(0, sortedIndexes.length - 1).get
-        val nodeOffsets = new Array[Int](nodeIdCounter.get())
-        val nodeLength = new Array[Int](nodeIdCounter.get())
-        val nodeWritingQueue = mutable.Queue(rootNode)
-        var curOffset = 0
-        val offsets = new Array[Int](strings.length)
-        while (nodeWritingQueue.nonEmpty) {
-          val curNode = nodeWritingQueue.dequeue()
-          nodeOffsets(curNode.id) = curOffset
-          stream.writeInt(curNode.entries.length)
-          curNode.entries.foreach { entry =>
-            stream.writeInt(entry.stringIndex)
-            stream.writeInt(entry.childNode.map(x => x.id).getOrElse(-1))
-          }
-          curOffset += 4 + 8 * curNode.entries.length
-          curNode.entries.foreach { entry =>
-            stream.write(strings(entry.stringIndex))
-            offsets(entry.stringIndex) = curOffset
-            curOffset += strings(entry.stringIndex).length
-            entry.childNode.foreach(nodeWritingQueue.addOne)
-          }
-          nodeLength(curNode.id) = curOffset - nodeOffsets(curNode.id)
-        }
-
+        generateNode(0, strings.length - 1)
         stream.flush()
         val lengths = strings.map(_.length)
-        new DiskBtreeInternedStrings(filePath.toFile, offsets, lengths, curOffset, nodeOffsets, nodeLength)
+        new DiskBtreeInternedStrings(
+          filePath.toFile,
+          offsets,
+          lengths,
+          curOffset,
+          nodeOffsets.take(nodeIdCounter.get()),
+          nodeLength.take(nodeIdCounter.get())
+        )
     }
   }
 }
@@ -120,14 +122,13 @@ class DiskBtreeInternedStrings private (
         val bytesComparison = java.util.Arrays.compare(
           wordBytes,
           0,
-          word.length,
+          wordBytes.length,
           currentNodeInfo.buffer.array(),
           bytesChecked,
           bytesChecked + lengths(stringIndex)
         )
         if (bytesComparison < 0) {
           if (currentNodeInfo.childNode(currentEntry) != -1) {
-            raf.seek(nodeOffsets(currentNodeInfo.childNode(currentEntry)))
             currentNodeInfo = readNodeInfo(raf, currentNodeInfo.childNode(currentEntry))
           } else {
             currentNodeInfo = null
@@ -148,6 +149,7 @@ class DiskBtreeInternedStrings private (
   }
 
   private def readNodeInfo(raf: RandomAccessFile, nodeId: Int): NodeBytesWrapper = {
+    raf.seek(nodeOffsets(nodeId))
     val nodeBytes = new Array[Byte](nodeLengths(nodeId))
     raf.read(nodeBytes)
     val nodeInfo = NodeBytesWrapper(ByteBuffer.wrap(nodeBytes))

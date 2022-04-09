@@ -17,12 +17,12 @@ import scala.util.Random
 
 @State(Scope.Benchmark)
 class InternedStringsBenchMark {
-//  @Benchmark
-//  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
-//  def bruteForceDisk(state: BruteForceState): Unit = {
-//    state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
-//  }
-//
+  @Benchmark
+  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
+  def bruteForceDisk(state: BruteForceState): Unit = {
+    state.dataset.foreach(x => state.data.lookup(new String(x, StandardCharsets.UTF_8)))
+  }
+
   @Benchmark
   @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
   def diskHash(state: HashState): Unit = {
@@ -65,7 +65,7 @@ abstract class BaseState() {
   }
 
   private def genDataset(size: Int): Array[Array[Byte]] = {
-    val rand = new Random
+    val rand = new Random(0)
 
     (0 to size).map(_ => rand.nextString(20).getBytes(StandardCharsets.UTF_8)).toArray
   }

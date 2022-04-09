@@ -27,16 +27,15 @@ object DiskHashBackedInternedStrings {
           currentOffset += string.length
           val stringHash = util.Arrays.hashCode(string)
           if (hash2Offset.containsKey(stringHash)) {
-            hash2Offset.remove(stringHash)
-            hash2MultipleOffsets
+            val indexesUnderSameHash = hash2MultipleOffsets
               .computeIfAbsent(
                 stringHash,
                 new IntFunction[HashIntSet] {
                   override def apply(value: Int): HashIntSet = HashIntSets.newUpdatableSet()
                 }
               )
-              .add(index)
-
+            indexesUnderSameHash.add(hash2Offset.remove(stringHash))
+            indexesUnderSameHash.add(index)
           } else {
             hash2Offset.put(stringHash, index)
           }
