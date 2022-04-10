@@ -11,9 +11,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.math.{cbrt, ceil, max}
 import scala.util.Using
 
-case class Entry(stringIndex: Int, childNode: Option[Node])
-case class Node(id: Int, entries: Array[Entry])
-
 object DiskBtreeInternedStrings {
   def apply(strings: Array[Array[Byte]], filePath: Path): DiskBtreeInternedStrings = {
     // we want to not have more than 3 seeks for searching of each string
@@ -53,8 +50,6 @@ object DiskBtreeInternedStrings {
         def generateNode(l: Int, r: Int): Int = {
           if (l > r) {
             -1
-          } else if (l == r) {
-            writeEntry(nodeIdCounter.getAndIncrement(), Array((sortedIndexes(l), -1)))
           } else {
             val numbersInEntry = (r - l) / m.doubleValue
             if (numbersInEntry < 1) {
@@ -97,8 +92,8 @@ case class NodeBytesWrapper(buffer: ByteBuffer) {
 }
 
 class DiskBtreeInternedStrings private (
-    private val file: File,
-    private val offsets: Array[Int],
+    file: File,
+    offsets: Array[Int],
     private val lengths: Array[Int],
     private val totalSize: Int,
     private val nodeOffsets: Array[Int],

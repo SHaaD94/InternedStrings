@@ -48,8 +48,8 @@ object DiskHashBackedInternedStrings {
 }
 
 class DiskHashBackedInternedStrings private (
-    private val file: File,
-    private val offsets: Array[Int],
+    file: File,
+    offsets: Array[Int],
     private val hash2Offset: HashIntIntMap,
     private val hash2MultipleOffsets: HashIntObjMap[HashIntSet],
     private val totalSize: Int

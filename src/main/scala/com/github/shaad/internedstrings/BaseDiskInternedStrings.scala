@@ -8,8 +8,8 @@ import scala.collection.concurrent.TrieMap
 import scala.util.Using
 
 abstract class BaseDiskInternedStrings(
-    private val file: File,
-    private val offsets: Array[Int],
+    protected val file: File,
+    protected val offsets: Array[Int],
     private val totalSize: Int
 ) extends InternedStrings {
   protected val raf = new RandomAccessFile(file, "r")

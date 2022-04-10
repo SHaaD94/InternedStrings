@@ -11,25 +11,25 @@ import scala.util.Random
 
 @State(Scope.Benchmark)
 class InternedStringsBenchMark {
-  @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput))
-  def bruteForceDisk(state: BruteForceState): Unit = standardBench(state)
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def bruteForceDisk(state: BruteForceState): Unit = standardBench(state)
+//
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def diskHash(state: HashState): Unit = standardBench(state)
 
   @Benchmark
   @BenchmarkMode(Array(Mode.Throughput))
-  def diskHash(state: HashState): Unit = standardBench(state)
-
-  @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput))
-  def diskHashBucketed(state: BucketedHashState): Unit = standardBench(state)
-
-  @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput))
-  def diskBinarySearch(state: BinSearchState): Unit = standardBench(state)
-
-  @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput))
-  def diskBtree(state: BtreeState): Unit = standardBench(state)
+  def diskHashBucketedByElements(state: BucketedHashStateElements): Unit = standardBench(state)
+//
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def diskBinarySearch(state: BinSearchState): Unit = standardBench(state)
+//
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def diskBtree(state: BtreeState): Unit = standardBench(state)
 
   private def standardBench(state: BaseState): Unit = {
     val randomIndex = state.rand.nextInt(state.dataset.length)
@@ -77,8 +77,12 @@ class HashState extends BaseState {
   override def createStrings(file: Path): InternedStrings = DiskHashBackedInternedStrings.apply(dataset, file)
 }
 
-class BucketedHashState extends BaseState {
-  override def createStrings(file: Path): InternedStrings = DiskHashBucketBackedInternedStrings.apply(dataset, file)
+class BucketedHashStateElements extends BaseState {
+  @Param(Array("10", "20", "50", "100", "200"))
+  var elementsInBucket: Int = 0
+
+  override def createStrings(file: Path): InternedStrings =
+    DiskHashBucketBackedInternedStrings.apply(dataset, file, elementsInBucket)
 }
 
 class BinSearchState extends BaseState {

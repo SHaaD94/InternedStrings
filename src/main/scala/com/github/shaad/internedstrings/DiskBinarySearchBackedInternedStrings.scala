@@ -40,8 +40,8 @@ object DiskBinarySearchBackedInternedStrings {
 }
 
 class DiskBinarySearchBackedInternedStrings(
-    private val file: File,
-    private val offsets: Array[Int],
+    file: File,
+    offsets: Array[Int],
     private val sortedIdsMapping: Array[Int],
     private val totalSize: Int
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {

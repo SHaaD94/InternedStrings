@@ -90,7 +90,7 @@ class HashDiskInternedStringsSpec extends InternedStringsSpec {
 
 class HashBucketedDiskInternedStringsSpec extends InternedStringsSpec {
   override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
-    DiskHashBucketBackedInternedStrings.apply(strings, filePath)
+    DiskHashBucketBackedInternedStrings.apply(strings, filePath, 2)
 }
 
 class BinarySearchDiskInternedStringsSpec extends InternedStringsSpec {

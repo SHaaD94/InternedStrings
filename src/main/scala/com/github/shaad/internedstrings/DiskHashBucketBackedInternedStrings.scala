@@ -54,12 +54,14 @@ object DiskHashBucketBackedInternedStrings {
 }
 
 class DiskHashBucketBackedInternedStrings private (
-    private val file: File,
-    private val offsets: Array[Int],
+    file: File,
+    offsets: Array[Int],
     private val lengths: Array[Int],
     private val hashBuckets: Array[Array[Int]],
     private val totalSize: Int
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {
+
+  override protected def getSize(id: Int): Int = lengths(id)
 
   override def lookup(word: String): Int = {
     val wordBytes = word.getBytes(StandardCharsets.UTF_8)
@@ -69,9 +71,7 @@ class DiskHashBucketBackedInternedStrings private (
     bucket.headOption match {
       case None => NullId
       case Some(idOfFirstStringIngBucket) =>
-        raf.seek(offsets(idOfFirstStringIngBucket))
-        val bucketBytes = new Array[Byte](bucket.map(lengths(_)).sum)
-        raf.readFully(bucketBytes)
+        val bucketBytes: Array[Byte] = readBucket(bucket, idOfFirstStringIngBucket)
         var requiredIndex: Int = NullId
         var arrayOffset = 0
         var i = 0
@@ -94,5 +94,12 @@ class DiskHashBucketBackedInternedStrings private (
         }
         requiredIndex
     }
+  }
+
+  private def readBucket(bucket: Array[Int], idOfFirstStringIngBucket: Int): Array[Byte] = {
+    raf.seek(offsets(idOfFirstStringIngBucket))
+    val bucketBytes = new Array[Byte](bucket.map(lengths(_)).sum)
+    raf.readFully(bucketBytes)
+    bucketBytes
   }
 }

@@ -29,8 +29,8 @@ object BruteForceDiskBackedInternedStrings {
 }
 
 class BruteForceDiskBackedInternedStrings private (
-    private val file: File,
-    private val offsets: Array[Int],
+    file: File,
+    offsets: Array[Int],
     private val totalSize: Int
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {
   override def lookup(word: String): Int = {
