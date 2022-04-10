@@ -21,6 +21,10 @@ class InternedStringsBenchMark {
 
   @Benchmark
   @BenchmarkMode(Array(Mode.Throughput))
+  def diskHashBucketed(state: BucketedHashState): Unit = standardBench(state)
+
+  @Benchmark
+  @BenchmarkMode(Array(Mode.Throughput))
   def diskBinarySearch(state: BinSearchState): Unit = standardBench(state)
 
   @Benchmark
@@ -71,6 +75,10 @@ class BruteForceState extends BaseState {
 
 class HashState extends BaseState {
   override def createStrings(file: Path): InternedStrings = DiskHashBackedInternedStrings.apply(dataset, file)
+}
+
+class BucketedHashState extends BaseState {
+  override def createStrings(file: Path): InternedStrings = DiskHashBucketBackedInternedStrings.apply(dataset, file)
 }
 
 class BinSearchState extends BaseState {

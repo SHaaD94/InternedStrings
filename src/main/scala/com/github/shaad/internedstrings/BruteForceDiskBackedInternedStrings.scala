@@ -48,8 +48,7 @@ class BruteForceDiskBackedInternedStrings private (
         }
       }
 
-      val searchResult = search(0)
-      searchResult
+      search(0)
     }
   }
 }
