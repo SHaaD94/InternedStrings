@@ -8,27 +8,19 @@ import scala.collection.concurrent.TrieMap
 import scala.util.Using
 
 abstract class BaseDiskInternedStrings(
-    private val file: File,
-    private val offsets: Array[Int],
+    protected val file: File,
+    protected val offsets: Array[Int],
     private val totalSize: Int
 ) extends InternedStrings {
-  protected val string2Id = new TrieMap[String, Int]()
-  protected val id2String = new TrieMap[Int, String]()
+  protected val raf = new RandomAccessFile(file, "r")
 
   override def lookup(id: Int): String = {
     if (id == NullId || offsets.length <= id) {
       null
     } else {
-      id2String.getOrElseUpdate(
-        id, {
-          Using.resource(new RandomAccessFile(file, "r")) { raf =>
-            val bytes = readBytesByIndex(raf, id)
-            val string = new String(bytes, StandardCharsets.UTF_8)
-            string2Id.put(string, id)
-            string
-          }
-        }
-      )
+      val bytes = readBytesByIndex(raf, id)
+      val string = new String(bytes, StandardCharsets.UTF_8)
+      string
     }
   }
 
@@ -45,5 +37,4 @@ abstract class BaseDiskInternedStrings(
     } else {
       offsets(id + 1) - offsets(id)
     }
-
 }

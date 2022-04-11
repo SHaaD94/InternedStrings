@@ -4,13 +4,14 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
 
 abstract class InternedStringsSpec extends AnyWordSpec with BeforeAndAfterAll {
   private val strings: Array[Array[Byte]] =
     Array("a", "bbb", "cccccc", "qweqweqwerasd", "234243", "!3afas432", "", " ", "hgsdg asd").map(
-      _.getBytes()
+      _.getBytes(StandardCharsets.UTF_8)
     )
   private val directory = Files.createTempDirectory("temp-test-dir").toFile
 
@@ -87,6 +88,11 @@ class HashDiskInternedStringsSpec extends InternedStringsSpec {
     DiskHashBackedInternedStrings.apply(strings, filePath)
 }
 
+class HashBucketedDiskInternedStringsSpec extends InternedStringsSpec {
+  override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
+    DiskHashBucketBackedInternedStrings.apply(strings, filePath, 2)
+}
+
 class BinarySearchDiskInternedStringsSpec extends InternedStringsSpec {
   override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
     DiskBinarySearchBackedInternedStrings.apply(strings, filePath)
@@ -95,4 +101,9 @@ class BinarySearchDiskInternedStringsSpec extends InternedStringsSpec {
 class BruteForceDiskBackedInternedStringsSpec extends InternedStringsSpec {
   override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
     BruteForceDiskBackedInternedStrings.apply(strings, filePath)
+}
+
+class BTreeIndexDiskSpec extends InternedStringsSpec {
+  override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
+    DiskBtreeInternedStrings.apply(strings, filePath)
 }

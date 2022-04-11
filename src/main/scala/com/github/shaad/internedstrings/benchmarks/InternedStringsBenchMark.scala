@@ -1,55 +1,94 @@
 package com.github.shaad.internedstrings.benchmarks
 
-import com.github.shaad.internedstrings.{
-  BruteForceDiskBackedInternedStrings,
-  DiskBinarySearchBackedInternedStrings,
-  DiskHashBackedInternedStrings
-}
+import com.github.shaad.internedstrings._
 import org.openjdk.jmh.annotations._
 
+import java.io.File
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
 import scala.util.Random
 
 @State(Scope.Benchmark)
 class InternedStringsBenchMark {
-  private val rand = new Random
-  private val dataset = genDataset(10_000)
-
-  private val dir = Files.createTempDirectory("bench").toFile
-
-  @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
-  def bruteForceDisk(): Unit = {
-    val internedStrings =
-      BruteForceDiskBackedInternedStrings.apply(dataset, Paths.get(dir.toString, UUID.randomUUID().toString))
-    dataset.foreach(x => internedStrings.lookup(new String(x, StandardCharsets.UTF_8)))
-  }
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def bruteForceDisk(state: BruteForceState): Unit = standardBench(state)
+//
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def diskHash(state: HashState): Unit = standardBench(state)
 
   @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
-  def diskHash(): Unit = {
-    val internedStrings =
-      DiskHashBackedInternedStrings.apply(dataset, Paths.get(dir.toString, UUID.randomUUID().toString))
-    dataset.foreach(x => internedStrings.lookup(new String(x, StandardCharsets.UTF_8)))
+  @BenchmarkMode(Array(Mode.Throughput))
+  def diskHashBucketedByElements(state: BucketedHashStateElements): Unit = standardBench(state)
+//
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def diskBinarySearch(state: BinSearchState): Unit = standardBench(state)
+//
+//  @Benchmark
+//  @BenchmarkMode(Array(Mode.Throughput))
+//  def diskBtree(state: BtreeState): Unit = standardBench(state)
+
+  private def standardBench(state: BaseState): Unit = {
+    val randomIndex = state.rand.nextInt(state.dataset.length)
+    val randomString = state.dataset(randomIndex)
+    state.data.lookup(new String(randomString, StandardCharsets.UTF_8))
+  }
+}
+
+@State(Scope.Benchmark)
+abstract class BaseState() {
+  @Param(Array("1000", "10000", "100000", "1000000"))
+  var stringsCount: Int = 0
+
+  lazy val dataset: Array[Array[Byte]] = genDataset()
+  var data: InternedStrings = null
+  protected var dir: File = null
+
+  val rand = new Random(0)
+
+  @Setup(value = Level.Iteration)
+  def init(): Unit = {
+    dir = Files.createTempDirectory("bench").toFile
+    val filepath = Paths.get(dir.toString, UUID.randomUUID().toString)
+    data = createStrings(filepath)
   }
 
-  @Benchmark
-  @BenchmarkMode(Array(Mode.Throughput, Mode.AverageTime))
-  def diskBinarySearch(): Unit = {
-    val internedStrings =
-      DiskBinarySearchBackedInternedStrings.apply(dataset, Paths.get(dir.toString, UUID.randomUUID().toString))
-    dataset.foreach(x => internedStrings.lookup(new String(x, StandardCharsets.UTF_8)))
-  }
+  def createStrings(file: Path): InternedStrings
 
-  @TearDown
   def removeDir(): Unit = {
     dir.listFiles().foreach(_.delete())
     dir.delete()
   }
 
-  private def genDataset(size: Int): Array[Array[Byte]] = {
-    ((0 to size).map(_ => rand.nextString(20).getBytes(StandardCharsets.UTF_8))).toArray
+  private def genDataset(): Array[Array[Byte]] = {
+    require(stringsCount > 0)
+    (0 to stringsCount).map(_ => rand.nextString(20).getBytes(StandardCharsets.UTF_8)).toArray
   }
+}
+
+class BruteForceState extends BaseState {
+  override def createStrings(file: Path): InternedStrings = BruteForceDiskBackedInternedStrings.apply(dataset, file)
+}
+
+class HashState extends BaseState {
+  override def createStrings(file: Path): InternedStrings = DiskHashBackedInternedStrings.apply(dataset, file)
+}
+
+class BucketedHashStateElements extends BaseState {
+  @Param(Array("10", "20", "50", "100", "200"))
+  var elementsInBucket: Int = 0
+
+  override def createStrings(file: Path): InternedStrings =
+    DiskHashBucketBackedInternedStrings.apply(dataset, file, elementsInBucket)
+}
+
+class BinSearchState extends BaseState {
+  override def createStrings(file: Path): InternedStrings = DiskBinarySearchBackedInternedStrings.apply(dataset, file)
+}
+
+class BtreeState extends BaseState {
+  override def createStrings(file: Path): InternedStrings = DiskBtreeInternedStrings.apply(dataset, file)
 }

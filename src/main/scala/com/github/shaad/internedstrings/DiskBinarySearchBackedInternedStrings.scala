@@ -1,6 +1,6 @@
 package com.github.shaad.internedstrings
 
-import java.io.{File, RandomAccessFile}
+import java.io.{BufferedOutputStream, DataOutputStream, File, RandomAccessFile}
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption.{CREATE_NEW, WRITE}
 import java.nio.file.{Files, Path}
@@ -16,49 +16,37 @@ object ArrayOrdering extends Ordering[(Array[Byte], Int)] {
 
 object DiskBinarySearchBackedInternedStrings {
   def apply(strings: Array[Array[Byte]], filePath: Path): DiskBinarySearchBackedInternedStrings = {
-    Using.resource(Files.newOutputStream(filePath, CREATE_NEW, WRITE)) { stream =>
-      val offsets = new Array[Int](strings.length)
-      val sortedMappings = new Array[Int](strings.length)
+    Using.resource(new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(filePath, CREATE_NEW, WRITE)))) {
+      stream =>
+        val offsets = new Array[Int](strings.length)
+        val sortedMappings = strings.zipWithIndex.sorted(ArrayOrdering).map(_._2)
 
-      strings.zipWithIndex
-        .sorted(ArrayOrdering)
-        .zipWithIndex
-        .foreach { case ((_, originalIndex), sortedIndex) =>
-          sortedMappings(sortedIndex) = originalIndex
+        var currentOffset = 0
+        strings.zipWithIndex.foreach { case (string, originalIndex) =>
+          stream.write(string)
+          offsets(originalIndex) = currentOffset
+          currentOffset += string.length
         }
 
-      var currentOffset = 0
-      strings.zipWithIndex.foreach { case (string, originalIndex) =>
-        stream.write(string)
-        offsets(originalIndex) = currentOffset
-        currentOffset += string.length
-      }
-
-      stream.flush()
-      new DiskBinarySearchBackedInternedStrings(
-        filePath.toFile,
-        offsets,
-        sortedMappings,
-        currentOffset
-      )
+        stream.flush()
+        new DiskBinarySearchBackedInternedStrings(
+          filePath.toFile,
+          offsets,
+          sortedMappings,
+          currentOffset
+        )
     }
   }
 }
 
 class DiskBinarySearchBackedInternedStrings(
-    private val file: File,
-    private val offsets: Array[Int],
+    file: File,
+    offsets: Array[Int],
     private val sortedIdsMapping: Array[Int],
     private val totalSize: Int
 ) extends BaseDiskInternedStrings(file, offsets, totalSize) {
   override def lookup(word: String): Int = {
-    string2Id.getOrElseUpdate(
-      word, {
-        Using.resource(new RandomAccessFile(file, "r")) { raf =>
-          binsearch(0, offsets.length - 1, word.getBytes(StandardCharsets.UTF_8), raf)
-        }
-      }
-    )
+    binsearch(0, offsets.length - 1, word.getBytes(StandardCharsets.UTF_8), raf)
   }
 
   @tailrec
