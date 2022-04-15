@@ -10,6 +10,7 @@ lazy val root = (project in file("."))
 libraryDependencies += "com.koloboke" % "koloboke-api-jdk8" % "1.0.0"
 libraryDependencies += "com.koloboke" % "koloboke-impl-jdk8" % "1.0.0"
 libraryDependencies += "com.koloboke" % "koloboke-compile" % "0.5.1"
+libraryDependencies += "org.iq80.leveldb" % "leveldb" % "0.12"
 
 libraryDependencies += "org.openjdk.jmh" % "jmh-core" % "1.34"
 libraryDependencies += "org.openjdk.jmh" % "jmh-generator-annprocess" % "1.34"

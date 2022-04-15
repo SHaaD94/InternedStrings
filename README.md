@@ -9,6 +9,10 @@ Comparison of different implementations of `string->int` dictionaries
 [info] InternedStringsBenchMark.bruteForceDisk                             N/A           10000  thrpt   10     246.889 ±    10.628  ops/s
 [info] InternedStringsBenchMark.bruteForceDisk                             N/A          100000  thrpt   10      25.218 ±     2.250  ops/s
 [info] InternedStringsBenchMark.bruteForceDisk                             N/A         1000000  thrpt   10       2.321 ±     0.400  ops/s
+[info] InternedStringsBenchMark.levelDB                                    N/A            1000  thrpt   10  1492640.669 ± 2455.066  ops/s
+[info] InternedStringsBenchMark.levelDB                                    N/A           10000  thrpt   10  1062254.492 ± 1549.465  ops/s
+[info] InternedStringsBenchMark.levelDB                                    N/A          100000  thrpt   10   473684.436 ± 1107.087  ops/s
+[info] InternedStringsBenchMark.levelDB                                    N/A         1000000  thrpt   10   176597.247 ±  237.621  ops/s
 [info] InternedStringsBenchMark.diskBinarySearch                           N/A            1000  thrpt   10   79921.973 ±  7606.416  ops/s
 [info] InternedStringsBenchMark.diskBinarySearch                           N/A           10000  thrpt   10   55467.452 ±  2670.391  ops/s
 [info] InternedStringsBenchMark.diskBinarySearch                           N/A          100000  thrpt   10   43477.914 ±  8069.832  ops/s

@@ -31,6 +31,10 @@ class InternedStringsBenchMark {
   @BenchmarkMode(Array(Mode.Throughput))
   def diskBtree(state: BtreeState): Unit = standardBench(state)
 
+  @Benchmark
+  @BenchmarkMode(Array(Mode.Throughput))
+  def levelDB(state: LevelDBState): Unit = standardBench(state)
+
   private def standardBench(state: BaseState): Unit = {
     val randomIndex = state.rand.nextInt(state.dataset.length)
     val randomString = state.dataset(randomIndex)
@@ -91,4 +95,8 @@ class BinSearchState extends BaseState {
 
 class BtreeState extends BaseState {
   override def createStrings(file: Path): InternedStrings = DiskBtreeInternedStrings.apply(dataset, file)
+}
+
+class LevelDBState extends BaseState {
+  override def createStrings(file: Path): InternedStrings = LevelDBInternedStrings.apply(dataset, file)
 }

@@ -107,3 +107,8 @@ class BTreeIndexDiskSpec extends InternedStringsSpec {
   override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
     DiskBtreeInternedStrings.apply(strings, filePath)
 }
+
+class LevelDBBackedStringsSpec extends InternedStringsSpec {
+  override def initStrings(strings: Array[Array[Byte]], filePath: Path): InternedStrings =
+    LevelDBInternedStrings.apply(strings, filePath)
+}
